@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User, { IUser } from '../models/User';
+import { supabase } from '../config/supabase';
 
-interface AuthRequest extends Request {
-    user?: IUser;
+export interface AuthRequest extends Request {
+    user?: any;
 }
 
-const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
     let token;
 
     if (
@@ -17,16 +17,23 @@ const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string };
 
-            req.user = await User.findById(decoded.id).select('-passwordHash') as IUser;
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('id, name, email, role, xp, level, streak')
+                .eq('id', decoded.id)
+                .single();
+
+            if (error || !user) {
+                res.status(401).json({ message: 'Not authorized, user not found' });
+                return;
+            }
+
+            req.user = user;
             next();
         } catch (error) {
             res.status(401).json({ message: 'Not authorized, token failed' });
         }
-    }
-
-    if (!token) {
+    } else {
         res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
-
-export { protect, AuthRequest };
