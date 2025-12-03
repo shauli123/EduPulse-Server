@@ -20,7 +20,7 @@ export const registerUser = async (req: Request, res: Response) => {
             .select('*')
             .eq('email', email)
             .single();
-
+        
         if (existingUser) {
             res.status(400).json({ message: 'User already exists' });
             return;

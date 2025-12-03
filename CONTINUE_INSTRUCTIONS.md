@@ -7,7 +7,7 @@ Below are the instructions to run the project and continue development.
 
 ### Prerequisites
 - Node.js installed
-- MongoDB running locally (or update `MONGO_URI` in `server/.env`)
+- Supabase
 
 ### 1. Start the Backend
 ```bash
