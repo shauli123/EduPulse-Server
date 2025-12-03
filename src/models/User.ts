@@ -33,14 +33,13 @@ const UserSchema: Schema = new Schema({
     },
 }, { timestamps: true });
 
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function () {
     const user = this as unknown as IUser;
     if (!user.isModified('passwordHash')) {
-        return next();
+        return;
     }
     const salt = await bcrypt.genSalt(10);
     user.passwordHash = await bcrypt.hash(user.passwordHash, salt);
-    next();
 });
 
 UserSchema.methods.matchPassword = async function (enteredPassword: string) {
