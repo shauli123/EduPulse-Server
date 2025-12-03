@@ -1,0 +1,32 @@
+# EduPulse Development Tasks
+
+- [/] Project Initialization <!-- id: 0 -->
+    - [/] Create project structure (client/server) <!-- id: 1 -->
+    - [x] Initialize frontend (Vite + React + Tailwind) <!-- id: 2 -->
+    - [x] Initialize backend (Node + Express) <!-- id: 3 -->
+- [ ] Architecture Design & Planning <!-- id: 4 -->
+    - [ ] Define Database Schema (MongoDB) <!-- id: 5 -->
+    - [ ] Define API Routes <!-- id: 6 -->
+    - [ ] Design UI/UX System (Hebrew/RTL) <!-- id: 7 -->
+- [/] Backend Implementation <!-- id: 8 -->
+    - [/] Setup Express Server & DB Connection <!-- id: 9 -->
+    - [x] Implement Auth System (JWT) <!-- id: 10 -->
+    - [x] Implement Gemini API Integration Service <!-- id: 11 -->
+    - [x] Create Adaptive Learning Logic <!-- id: 12 -->
+    - [x] Create Gamification Logic <!-- id: 13 -->
+    - [x] Implement API Routes (User, Content, Quiz, AI) <!-- id: 14 -->
+- [/] Frontend Implementation <!-- id: 15 -->
+    - [x] Setup Tailwind & Global Styles (RTL) <!-- id: 16 -->
+    - [x] Create Core Components (Layout, Sidebar, Cards) <!-- id: 17 -->
+    - [x] Implement Auth Pages (Login/Register) <!-- id: 18 -->
+    - [x] Build Student Dashboard <!-- id: 19 -->
+    - [ ] Build Pulse Assistant (AI Chat) <!-- id: 20 -->
+    - [ ] Build Quiz Interface <!-- id: 21 -->
+    - [ ] Build Course Library & Lesson View <!-- id: 22 -->
+    - [ ] Build Gamification Elements (Leaderboard, Badges) <!-- id: 23 -->
+    - [ ] Build Teacher Dashboard <!-- id: 24 -->
+- [ ] Verification & Polish <!-- id: 25 -->
+    - [ ] Test AI Integration <!-- id: 26 -->
+    - [ ] Verify Adaptive Flows <!-- id: 27 -->
+    - [ ] Polish UI/Animations <!-- id: 28 -->
+    - [ ] Create Documentation <!-- id: 29 -->
