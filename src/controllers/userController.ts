@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import User from '../models/User';
+import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 // @desc    Get leaderboard
@@ -7,10 +7,17 @@ import { AuthRequest } from '../middleware/authMiddleware';
 // @access  Private
 export const getLeaderboard = async (req: Request, res: Response) => {
     try {
-        const users = await User.find({})
-            .sort({ xp: -1 })
-            .limit(10)
-            .select('name xp level role');
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('id, name, xp, level, role')
+            .order('xp', { ascending: false })
+            .limit(10);
+
+        if (error) {
+            res.status(500).json({ message: 'Server Error', error });
+            return;
+        }
+
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -24,23 +31,38 @@ export const updateUserXP = async (req: AuthRequest, res: Response) => {
     const { xpToAdd } = req.body;
 
     try {
-        const user = await User.findById(req.user?._id);
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', req.user?.id)
+            .single();
 
-        if (user) {
-            user.xp += xpToAdd;
-
-            // Simple level up logic: Level = floor(sqrt(XP / 100)) + 1
-            const newLevel = Math.floor(Math.sqrt(user.xp / 100)) + 1;
-            if (newLevel > user.level) {
-                user.level = newLevel;
-                // Could add notification logic here
-            }
-
-            await user.save();
-            res.json({ xp: user.xp, level: user.level });
-        } else {
+        if (fetchError || !user) {
             res.status(404).json({ message: 'User not found' });
+            return;
         }
+
+        const newXp = user.xp + xpToAdd;
+
+        // Simple level up logic: Level = floor(sqrt(XP / 100)) + 1
+        const newLevel = Math.floor(Math.sqrt(newXp / 100)) + 1;
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({
+                xp: newXp,
+                level: newLevel,
+            })
+            .eq('id', req.user?.id)
+            .select('xp, level')
+            .single();
+
+        if (updateError || !updatedUser) {
+            res.status(500).json({ message: 'Server Error', error: updateError });
+            return;
+        }
+
+        res.json(updatedUser);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

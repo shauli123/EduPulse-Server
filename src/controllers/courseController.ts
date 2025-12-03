@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import Course from '../models/Course';
-import Progress from '../models/Progress';
+import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 // @desc    Get all courses
@@ -8,7 +7,16 @@ import { AuthRequest } from '../middleware/authMiddleware';
 // @access  Private
 export const getCourses = async (req: Request, res: Response) => {
     try {
-        const courses = await Course.find({});
+        const { data: courses, error } = await supabase
+            .from('courses')
+            .select('*')
+            .eq('is_public', true);
+
+        if (error) {
+            res.status(500).json({ message: 'Server Error', error });
+            return;
+        }
+
         res.json(courses);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -20,12 +28,18 @@ export const getCourses = async (req: Request, res: Response) => {
 // @access  Private
 export const getCourseById = async (req: Request, res: Response) => {
     try {
-        const course = await Course.findById(req.params.id);
-        if (course) {
-            res.json(course);
-        } else {
+        const { data: course, error } = await supabase
+            .from('courses')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !course) {
             res.status(404).json({ message: 'Course not found' });
+            return;
         }
+
+        res.json(course);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -37,16 +51,25 @@ export const getCourseById = async (req: Request, res: Response) => {
 export const createCourse = async (req: AuthRequest, res: Response) => {
     try {
         const { title, subject, gradeLevel, topics } = req.body;
-        const course = new Course({
-            title,
-            subject,
-            gradeLevel,
-            topics,
-            createdBy: req.user?._id,
-        });
 
-        const createdCourse = await course.save();
-        res.status(201).json(createdCourse);
+        const { data: course, error } = await supabase
+            .from('courses')
+            .insert([{
+                title,
+                subject,
+                grade_level: gradeLevel,
+                topics,
+                created_by: req.user?.id,
+            }])
+            .select()
+            .single();
+
+        if (error || !course) {
+            res.status(400).json({ message: 'Invalid course data', error });
+            return;
+        }
+
+        res.status(201).json(course);
     } catch (error) {
         res.status(400).json({ message: 'Invalid course data' });
     }
@@ -58,34 +81,74 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
 export const updateProgress = async (req: AuthRequest, res: Response) => {
     const { lessonId, quizScore } = req.body;
     const courseId = req.params.id;
-    const userId = req.user?._id;
+    const userId = req.user?.id;
 
     try {
-        let progress = await Progress.findOne({ user: userId, course: courseId });
+        // Check if progress exists
+        const { data: existingProgress } = await supabase
+            .from('progress')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('course_id', courseId)
+            .single();
 
-        if (!progress) {
-            progress = new Progress({
-                user: userId,
-                course: courseId,
-                completedLessons: [],
-                quizScores: [],
-            });
+        if (existingProgress) {
+            // Update existing progress
+            const completedLessons = existingProgress.completed_lessons || [];
+            const quizScores = existingProgress.quiz_scores || [];
+
+            if (lessonId && !completedLessons.includes(lessonId)) {
+                completedLessons.push(lessonId);
+            }
+
+            if (quizScore) {
+                quizScores.push({
+                    quizId: lessonId,
+                    score: quizScore,
+                    date: new Date().toISOString(),
+                });
+            }
+
+            const { data: updatedProgress, error } = await supabase
+                .from('progress')
+                .update({
+                    completed_lessons: completedLessons,
+                    quiz_scores: quizScores,
+                })
+                .eq('id', existingProgress.id)
+                .select()
+                .single();
+
+            if (error) {
+                res.status(500).json({ message: 'Server Error', error });
+                return;
+            }
+
+            res.json(updatedProgress);
+        } else {
+            // Create new progress
+            const { data: newProgress, error } = await supabase
+                .from('progress')
+                .insert([{
+                    user_id: userId,
+                    course_id: courseId,
+                    completed_lessons: lessonId ? [lessonId] : [],
+                    quiz_scores: quizScore ? [{
+                        quizId: lessonId,
+                        score: quizScore,
+                        date: new Date().toISOString(),
+                    }] : [],
+                }])
+                .select()
+                .single();
+
+            if (error) {
+                res.status(500).json({ message: 'Server Error', error });
+                return;
+            }
+
+            res.json(newProgress);
         }
-
-        if (lessonId && !progress.completedLessons.includes(lessonId)) {
-            progress.completedLessons.push(lessonId);
-        }
-
-        if (quizScore) {
-            progress.quizScores.push({
-                quizId: lessonId, // Assuming quiz is tied to lesson for now
-                score: quizScore,
-                date: new Date(),
-            });
-        }
-
-        await progress.save();
-        res.json(progress);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
