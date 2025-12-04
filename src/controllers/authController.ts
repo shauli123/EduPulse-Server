@@ -20,7 +20,7 @@ export const registerUser = async (req: Request, res: Response) => {
             .select('*')
             .eq('email', email)
             .single();
-        
+
         if (existingUser) {
             res.status(400).json({ message: 'User already exists' });
             return;
@@ -42,6 +42,11 @@ export const registerUser = async (req: Request, res: Response) => {
                     xp: 0,
                     level: 1,
                     streak: 0,
+                    preferences: {
+                        learningStyle: 'text',
+                        difficulty: 'medium',
+                        learningAnalysis: ''
+                    }
                 },
             ])
             .select()
@@ -109,7 +114,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, name, email, role, xp, level, streak')
+            .select('id, name, email, role, xp, level, streak, preferences')
             .eq('id', req.user?.id)
             .single();
 

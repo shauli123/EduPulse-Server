@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   level INTEGER DEFAULT 1,
   streak INTEGER DEFAULT 0,
   last_login TIMESTAMP DEFAULT NOW(),
-  preferences JSONB DEFAULT '{"learningStyle": "text", "difficulty": "medium"}'::jsonb,
+  preferences JSONB DEFAULT '{"learningStyle": "text", "difficulty": "medium", "learningAnalysis": ""}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
