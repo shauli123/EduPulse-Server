@@ -5,16 +5,31 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-export const generateContent = async (prompt: string): Promise<string> => {
-    try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
-    } catch (error) {
-        console.error('Error generating content with Gemini:', error);
-        throw new Error('Failed to generate content');
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const generateContent = async (prompt: string, retries = 3): Promise<string> => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            return response.text();
+        } catch (error: any) {
+            console.error(`Attempt ${i + 1} failed:`, error.message);
+
+            // If it's the last attempt, throw the error
+            if (i === retries - 1) {
+                console.error('All retry attempts failed');
+                throw new Error('Failed to generate content after multiple attempts');
+            }
+
+            // Exponential backoff: 2s, 4s, 8s...
+            const delay = Math.pow(2, i + 1) * 1000;
+            console.log(`Retrying in ${delay}ms...`);
+            await sleep(delay);
+        }
     }
+    throw new Error('Unexpected error in generateContent');
 };
 
 export const generateQuiz = async (topic: string, difficulty: string, language: string = 'Hebrew'): Promise<any> => {
@@ -134,6 +149,7 @@ Create comprehensive lesson content that:
 4. Breaks down complex ideas into digestible parts
 5. Is engaging and educational
 6. Is approximately 500-800 words
+7. Uses "## " for main section headers (this is used to split slides)
 
 IMPORTANT: Return the content in the following strict format:
 

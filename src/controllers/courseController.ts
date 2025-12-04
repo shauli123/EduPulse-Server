@@ -3,15 +3,23 @@ import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { generateCompleteCourse } from '../services/geminiService';
 
-// @desc    Get all courses
+// @desc    Get all courses for the logged-in user
 // @route   GET /api/courses
 // @access  Private
-export const getCourses = async (req: Request, res: Response) => {
+export const getCourses = async (req: AuthRequest, res: Response) => {
     try {
+        const userId = req.user?.id;
+
+        if (!userId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
         const { data: courses, error } = await supabase
             .from('courses')
             .select('*')
-            .eq('is_public', true);
+            .eq('created_by', userId)
+            .order('created_at', { ascending: false });
 
         if (error) {
             res.status(500).json({ message: 'Server Error', error });
